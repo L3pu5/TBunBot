@@ -28,6 +28,7 @@ my_new_twitchbot.RegisterOnMessageEvent((twitchmessage) => {
 // Don't forget to keep your bot alive!
 while (true){
     string input = Console.ReadLine();
+    // You can interact with your bot here, if you want to enter backend input!
     if(input == "Exit" || input == "exit" || input == "")
         return 69;
 }

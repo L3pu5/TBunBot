@@ -65,6 +65,8 @@ namespace TBunBot {
             sslStream.AuthenticateAsClient(TwitchApiData.TwitchIrcHostname);
             if(clientSocket.Connected){
                 TBunBotGlobals.Log("Connected and authenticated over SSL", 1);
+                //Handle ping pong.
+                RegisterOnMessageEvent( (message) => {if (message.Mesage == "PING") Write("PONG :tmi.twitch.tv");});
             }
             Task.Run(Listen);
         }

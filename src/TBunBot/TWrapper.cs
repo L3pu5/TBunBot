@@ -49,8 +49,8 @@ namespace TBunBot {
     }
 
     public class Client{
-        TcpClient clientSocket;
-        SslStream sslStream;
+        TcpClient? clientSocket;
+        SslStream? sslStream;
 
 
         /// <summary>
@@ -66,16 +66,21 @@ namespace TBunBot {
             if(clientSocket.Connected){
                 TBunBotGlobals.Log("Connected and authenticated over SSL", 1);
             }
-            Listen();
+            Task.Run(Listen);
         }
 
 
-        byte[] dataBuffer;
-        public async Task Listen(){
+        byte[] dataBuffer = new byte[512*10];
+        public void Listen(){
+            if(clientSocket == null)
+                throw new Exception("Attempted to listen on a null socket.");
+            if(sslStream == null)
+                throw new Exception("Attempted to listen without a valid SslStream.");
+
                while(clientSocket.Connected)
                 {
                     dataBuffer = new byte[512*10];
-                    await sslStream.ReadAsync(dataBuffer, 0, 512*10);
+                    sslStream.Read(dataBuffer, 0, 512*10);
                     TBunBotGlobals.Log((Encoding.UTF8.GetString(dataBuffer)), 2);
                     //Every line that the bot parses can have more than 1 message.
                     //Break the line into multiple messages.
@@ -83,13 +88,13 @@ namespace TBunBot {
                     //Raise the OnMessageReceived event for each Vmessage.
                     foreach (TwitchMessage message in messages)
                     {
-                        OnMessageReceived.Invoke(message);
+                        OnMessageReceived?.Invoke(message);
                     }
                 }
         }
 
         public delegate void OnMessageCallback(TwitchMessage message);
-        event OnMessageCallback OnMessageReceived;
+        event OnMessageCallback? OnMessageReceived;
 
         /// <summary>
         /// Provide a function to the bot to execute based on an incoming message. This function will fire on ALL messages the bot receives.
@@ -141,6 +146,8 @@ namespace TBunBot {
         /// </summary>
         /// <param name="message">The message in string to send to the TwitchAPI.</param>
         public void Write(string message, bool hidden = false){
+            if(sslStream == null)
+                throw new Exception("Attempted to listen without a valid SslStream.");
             if( !hidden)
                 TBunBotGlobals.Log($"Sending -> {message}", 1);
             sslStream.Write(Encoding.UTF8.GetBytes(message + "\n"));
@@ -148,8 +155,8 @@ namespace TBunBot {
         }
 
         ~Client(){
-            clientSocket.Dispose();
-            sslStream.Dispose();
+            clientSocket?.Dispose();
+            sslStream?.Dispose();
         }
     }
 
@@ -159,7 +166,7 @@ namespace TBunBot {
     /// It contains a string .Sender .Message .Channel field that reflects the sender, plaintext message, and channel respectively. 
     /// </summary>
     public class TwitchMessage{
-        string sender;
+        string sender = "";
         /// <summary>
         /// The Sender of the Twitch message.
         /// </summary>
@@ -167,14 +174,14 @@ namespace TBunBot {
         /// <summary>
         /// The Channel the twitch message was sent in.
         /// </summary>
-        string channel;
+        string channel = "";
         public string Channel => channel;
         /// <summary>
         /// The plaintext of the twitch message.
         /// </summary>
-        string message;
+        string message = "";
         public string Mesage => message;
-        string[] usableMessage;
+        string[]? usableMessage;
         /// <summary>
         /// An array of strings containing each of the words. This allows easy parsing of the message based on space separated commands.
         /// </summary>
